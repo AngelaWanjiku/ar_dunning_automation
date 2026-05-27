@@ -1,6 +1,6 @@
 # Automated Accounts Receivable & Dunning System
 
-This project is an end-to-end automation I built to handle the full invoice-to-cash process — from receiving new invoices to tracking overdue payments and sending smart reminders.
+This project is an end-to-end automation I built to handle the full invoice-to-cash process; from receiving new invoices to tracking overdue payments and sending smart reminders.
 
 ### The Problem
 In many finance teams, chasing overdue invoices is still very manual. You end up with scattered reminders, no clear visibility into aging risk, and a lot of time wasted following up on the wrong accounts.
