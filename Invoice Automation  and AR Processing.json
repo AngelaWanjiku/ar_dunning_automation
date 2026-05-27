@@ -1,0 +1,2593 @@
+{
+  "name": "Invoice Automation  and AR Processing",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1vYNraMhI9acZ185pqeSnRJJ3kyZ6g2x3",
+          "mode": "list",
+          "cachedResultName": "Invoicess",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1vYNraMhI9acZ185pqeSnRJJ3kyZ6g2x3"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        -736
+      ],
+      "id": "7e3856e2-5290-45ce-b591-b38a1e23f1ee",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "FB61qJqvNg57Z9jn",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -736,
+        -736
+      ],
+      "id": "53da7455-0d0e-47bc-a78b-287bad1117c6",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Invoice Number",
+              "description": "Extract the unique Invoice Number. If an invoice number is not clearly visible or cannot be found, return a blank value. Do not guess or invent a number.",
+              "required": true
+            },
+            {
+              "name": "Client Name",
+              "description": "Extract the Client Name. If a Client Name is not clearly visible or cannot be found, return a blank value. Do not guess or invent a name.",
+              "required": true
+            },
+            {
+              "name": "Client Email Address",
+              "description": "Extract the client's email address. If no email address is present on the document, return a blank value.",
+              "required": true
+            },
+            {
+              "name": "Client KRA PIN",
+              "description": "The Kenya Revenue Authority(KRA) Personal Identification Number(PIN) for the client. Should be an 11-character alphanumeric string, strictly starting with the letter 'P' and ending with a letter, (e.g., P0XXXXXXXXZ). If the KRA PIN cannot be found, return a blank value. Do not guess or invent a number.",
+              "required": true
+            },
+            {
+              "name": "Sub Total",
+              "description": "The total cost of all items combined before taxes are added. Extract the numeric value only.  If the Sub Total cannot be found, return a blank value. Do not guess or invent a number.",
+              "required": true
+            },
+            {
+              "name": "VAT Rate",
+              "description": "The applicable Value Added Tax(VAT) rate expressed as a percentage. The standard rate in Kenya is 16%.  If the VAT rate cannot be found, return a blank value. Do not guess or invent a percentage.",
+              "required": true
+            },
+            {
+              "name": "VAT Amount",
+              "description": "The specific tax value, calculated from the subtotal. Extract the numeric value only.  If the VAT Amount cannot be found, return a blank value. Do not guess or invent a number.",
+              "required": true
+            },
+            {
+              "name": "Total",
+              "description": "The final grand total. This is the sum of the subtotal plus the VAT amount. Extract the numeric value only.  If the Total cannot be found, return a blank value. Do not guess or invent a number.",
+              "required": true
+            },
+            {
+              "name": "Issue Date",
+              "type": "date",
+              "description": "Extract the date the invoice was issued or created. Format the output strictly as YYYY-MM-DD (e.g., 2026-05-21). If the date on the invoice is written in text like 'May 21, 2026', convert it to 2026-05-21. If no clear issue date can be found on the document, return a blank value. Do not guess or use the current date.",
+              "required": true
+            },
+            {
+              "name": "Due Date",
+              "type": "date",
+              "description": "Extract the final payment due date. Format the output strictly as YYYY-MM-DD.\n\nIf the due date is explicitly stated (e.g., 'Due Date: June 20, 2026'), convert and return it as 2026-06-20.\n\nIf the document says 'Due upon receipt' or 'Due Immediately', use the extracted Invoice Issue Date as the Due Date.\n\nIf the document specifies terms like 'Net 30' or 'Payment due within 30 days', calculate the date by adding those days to the extracted Invoice Issue Date.\n\nIf no due date or payment terms are mentioned anywhere on the invoice, return a blank value. Do not guess.",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert extraction algorithm. Only extract relevant information from the text. If you do not know the value of an attribute asked to extract, you omit the attribute's value. CRITICAL: Return ONLY raw, clean JSON text. Do NOT wrap your response in markdown formatting or triple backticks (```json). Start directly with '{' and end directly with '}'."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -512,
+        -736
+      ],
+      "id": "7aee2a06-6fc6-4a7d-aae0-b3982f25c52e",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -448,
+        -512
+      ],
+      "id": "23e20b18-dea5-4a03-9981-e8869128af87",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -960,
+        -736
+      ],
+      "id": "b1d97ce2-5ccf-45bd-bd96-88b3c9e68558",
+      "name": "Download Binary",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "FB61qJqvNg57Z9jn",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Client Name: {{ $json['Client Name'] }}\n\nClient Email Address: {{ $json['Client Email Address'] }}\n\nVAT Rate: {{ $json['VAT Rate'] }}\n\nGrand Total: {{ $json.Total }}\n\nIssue Date: {{ $json['Issue Date'] }}\n\nDue Date: {{ $json['Due Date'] }}\n\n"
+            },
+            {
+              "role": "system",
+              "content": "=#Overview\nYou are an email assistant for Wanji Kay. You will receive invoice information. Your job is to notify the internal billing team that an invoice was received and sent the client database.\n\n##Email\nInform the billing team of the invoice, and that we have also updated this on the client database and they can view it here:\nhttps://docs.google.com/spreadsheets/d/1WD2wGrkdQigOeW2dumDkQ6CTco6wWRBus0K3aXYWwC0/edit?gid=0#gid=0\n\n##Output\nInput the following parameters separately:\nSubject\nEmail"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        288,
+        -736
+      ],
+      "id": "6ab08b68-5e60-486b-9743-e8515d7de89a",
+      "name": "Drafting an email",
+      "alwaysOutputData": false,
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "billing@example.com",
+        "subject": "={{ $json.output[0].content[0].text.Subject }}",
+        "emailType": "text",
+        "message": "={{ $json.output[0].content[0].text.Email }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        -736
+      ],
+      "id": "d5e7630e-8653-4b3e-b59c-b2e9e38d4bad",
+      "name": "Send Gmail",
+      "webhookId": "c3eb36c2-27ce-4c0c-8eb6-e5ce773429d8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GN09t5njBQFiyrJS",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "angelawanjiku171@gmail.com",
+        "subject": "Workflow Exception Alert: Invoice Procssing Flagged",
+        "emailType": "text",
+        "message": "=Hi,\n\nThe automated invoice processing workflow has flagged an exception. One or more of your validation conditions failed, so the data was NOT appended to the database.\n\n📋 Extracted Details for Review:\n• Vendor/Supplier Name: {{ $node[\"Information Extractor\"].json[\"Vendor/Supplier Name\"] || 'Unknown' }}\n• Invoice Number: {{ $node[\"Information Extractor\"].json[\"Invoice Number\"] || 'Not Found' }}\n• Invoice Date: {{ $node[\"Information Extractor\"].json[\"Invoice Date\"] || 'Not Found' }}\n\n🔍 Action Required:\nPlease check the n8n execution log or the source document to verify if this invoice is a duplicate, or if it is missing critical required fields. \n\n— Automated Invoice Gatekeeper",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        -544
+      ],
+      "id": "25e0ab0a-2305-4a8e-ba60-842f7bd48f92",
+      "name": "Send a message",
+      "webhookId": "b3d72054-673d-42fb-81cc-4e69818f622a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GN09t5njBQFiyrJS",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        864,
+        -736
+      ],
+      "id": "32af65ad-f298-43bd-9f53-54ff7ad6ca19",
+      "name": "No Operation, do nothing1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n// Validation Only\n// === VALIDATION NODE ===\n// === SIMPLE VALIDATION NODE ===\n\nconst data = $input.first().json.output;\n\nif (!data) return [];\n\n// Check for critical columns\nif (!data['Invoice Number'] || \n    !data['Client Name'] || \n    !data['Total'] || \n    !data['Due Date']) {\n    \n    data['Validation_Status'] = 'Failed';\n    data['Error_Reason'] = 'Missing critical fields';\n    return [ { json: data } ];   \n}\n\nconst total = parseFloat(data['Total']) || 0;\nconst status = String(data['Payment Status'] || '').toLowerCase().trim();\n\n// Skip paid or invalid amount invoices\nif (total <= 0) {\n    data['Validation_Status'] = 'Failed';\n       return [ { json: data } ];   // → Send to Bad Log\n}\n\n// If all checks pass\ndata['Validation_Status'] = 'Passed';\nreturn [ { json: data } ];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -736
+      ],
+      "id": "71254ff5-5ea5-4bdc-97d6-80dc8de0254b",
+      "name": "Validation"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4",
+          "mode": "list",
+          "cachedResultName": "AR Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1725112373,
+          "mode": "list",
+          "cachedResultName": "Bad Log AR",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit#gid=1725112373"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Invoice Number": "={{ $json['Invoice Number'] }}",
+            "Client Email Address": "={{ $json['Client Email Address'] }}",
+            "Client Name": "={{ $json['Client Name'] }}",
+            "Client KRA Pin": "={{ $json['Client KRA PIN'] }}",
+            "Sub Total ": "={{ $json['Sub Total'] }}",
+            "VAT Rate": "={{ $json['VAT Rate'] }}",
+            "VAT Amount": "={{ $json['VAT Amount'] }}",
+            "Total": "={{ $json.Total }}",
+            "Issue Date": "={{ $json['Issue Date'] }}",
+            "Due Date": "={{ $json['Due Date'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Email Address",
+              "displayName": "Client Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client KRA Pin",
+              "displayName": "Client KRA Pin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sub Total ",
+              "displayName": "Sub Total ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT Rate",
+              "displayName": "VAT Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT Amount",
+              "displayName": "VAT Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Issue Date",
+              "displayName": "Issue Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        -544
+      ],
+      "id": "14015539-9ad0-4fb0-9490-200cc123598f",
+      "name": "Bad Data Log",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L8oOBZdjEsaJjUkM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b8ffc5d4-fd98-4c26-aaff-07eb57e52d13",
+              "leftValue": "={{ $json.Validation_Status }}",
+              "rightValue": "Passed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        64,
+        -736
+      ],
+      "id": "316a98cf-2fe6-4b42-b055-aadb7bfe1183",
+      "name": "Good Vs Bad Log"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4",
+          "mode": "list",
+          "cachedResultName": "AR Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 651755752,
+          "mode": "list",
+          "cachedResultName": "New Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit#gid=651755752"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Invoice Number": "={{ $json['Invoice Number'] }}",
+            "Client Name": "={{ $json['Client Name'] }}",
+            "Client Email Address": "={{ $json['Client Email Address'] }}",
+            "Client KRA PIN": "={{ $json['Client KRA PIN'] }}",
+            "Sub Total": "={{ $json['Sub Total'] }}",
+            "VAT Rate": "={{ $json['VAT Rate'] }}",
+            "VAT Amount": "={{ $json['VAT Amount'] }}",
+            "Total": "={{ $json.Total }}",
+            "Issue Date": "={{ $json['Issue Date'] }}",
+            "Due Date": "={{ $json['Due Date'] }}"
+          },
+          "matchingColumns": [
+            "Invoice Number"
+          ],
+          "schema": [
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Email Address",
+              "displayName": "Client Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client KRA PIN",
+              "displayName": "Client KRA PIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sub Total",
+              "displayName": "Sub Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT Rate",
+              "displayName": "VAT Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT Amount",
+              "displayName": "VAT Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Issue Date",
+              "displayName": "Issue Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Days Overdue",
+              "displayName": "Days Overdue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Aging Bucket",
+              "displayName": "Aging Bucket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Risk Level",
+              "displayName": "Risk Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Follow-up Stage",
+              "displayName": "Follow-up Stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Contacted",
+              "displayName": "Last Contacted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        -928
+      ],
+      "id": "03033209-d1fe-4075-a80d-e4e46c658ac1",
+      "name": "New Invoices",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L8oOBZdjEsaJjUkM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a polite, professional email assistant for Wanji Kay. Draft friendly and understanding reminder emails. Always respond with valid JSON containing only \"subject\" and \"body\"."
+            },
+            {
+              "content": "=Draft a gentle first reminder email.\n\nDetails:\n- Client Name: {{ $json[\"Client Name\"] }}\n- Invoice Number: {{ $json[\"Invoice Number\"] }}\n- Amount: KES {{ $json[\"Total\"] }}\n- Days Overdue: {{ $json[\"Days Overdue\"] }}\n- Current Follow-up Stage: {{ $json[\"Follow-up Stage\"] }}\n\nRules:\n- Tone: Warm, polite, collaborative. Assume they may have overlooked it.\n- Only draft if Days Overdue is between 15 and 40.\n\nReturn only JSON:\n{\n  \"subject\": \"...\",\n  \"body\": \"...\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        608,
+        208
+      ],
+      "id": "22b43d17-94d8-408c-8aa0-cece849ba01b",
+      "name": "Low Risk",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a polite, professional email assistant for Wanji Kay. Draft friendly and understanding reminder emails. Always respond with valid JSON containing only \"subject\" and \"body\"."
+            },
+            {
+              "content": "=Draft a firm but respectful second reminder email.\n\nDetails:\n- Client Name: {{ $json[\"Client Name\"] }}\n- Invoice Number: {{ $json[\"Invoice Number\"] }}\n- Amount: KES {{ $json[\"Total\"] }}\n- Days Overdue: {{ $json[\"Days Overdue\"] }}\n- Current Follow-up Stage: {{ $json[\"Follow-up Stage\"] }}\n\nRules:\n- Tone: Professional, firm, clear expectation of payment.\n- Reference previous reminder if applicable.\n- Only draft if Days Overdue is between 41 and 75.\n\nReturn only JSON:\n{\n  \"subject\": \"...\",\n  \"body\": \"...\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        608,
+        16
+      ],
+      "id": "cb8726fc-05d0-4af9-9c00-fd1e52ccb157",
+      "name": "Medium Risk",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a professional finance email assistant for Wanji Kay. Always respond with valid JSON containing only \"subject\" and \"body\"."
+            },
+            {
+              "content": "=Draft an urgent internal escalation email to the finance team.\n\nDetails:\n- Client Name: {{ $json[\"Client Name\"] }}\n- Invoice Number: {{ $json[\"Invoice Number\"] }}\n- Amount: KES {{ $json[\"Total\"] }}\n- Days Overdue: {{ $json[\"Days Overdue\"] }}\n\nRules:\n- Tone: Serious, urgent, and professional.\n- This email is for internal escalation (not to the client).\n- Mention need for immediate action.\n\nReturn only JSON:\n{\n  \"subject\": \"...\",\n  \"body\": \"...\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        608,
+        -176
+      ],
+      "id": "f9025dc0-c5ec-407e-aba6-a900cb25d213",
+      "name": "High Risk",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Risk Level'] }}",
+                    "rightValue": "High Risk",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c34613a0-683e-4b01-ac20-565a6e167997"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6d3c7e8f-a4f4-431a-bdc0-1107d41cafae",
+                    "leftValue": "={{ $json['Risk Level'] }}",
+                    "rightValue": "Medium Risk",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4bb6ed04-f8ff-48b8-a350-a24a88f550c1",
+                    "leftValue": "={{ $json['Risk Level'] }}",
+                    "rightValue": "Low Risk",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        0
+      ],
+      "id": "e0f4f8f3-df01-4457-952f-e5005df829d8",
+      "name": "Credit Classifier"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "673c9ef9-8f9a-4f2c-b7c9-fa416a6b4515",
+              "name": "subject",
+              "value": "={{ $json.output[0].content[0].text.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "0008e7a9-4de9-4858-b9dc-c8437d7040aa",
+              "name": "body",
+              "value": "={{ $json.output[0].content[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "2f875c00-042a-4832-9549-7f61497dc778",
+              "name": "Last Contacted",
+              "value": "={{ $now.format('YYYY-MM-DD') }}",
+              "type": "string"
+            },
+            {
+              "id": "8a5ccc28-085b-442e-bab0-3f9e4b45c31f",
+              "name": "Follow Up Stage",
+              "value": "2nd Reminder Sent",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        16
+      ],
+      "id": "269a85ee-c149-4551-b30a-1cc395801592",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "89fcb4ff-e808-4d21-87b9-b8aaaf10e3f0",
+              "name": "Subject",
+              "value": "={{ $json[\"subject\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "dfb12b3b-020f-4249-a61f-c08a3c4bfb30",
+              "name": "body",
+              "value": "={{ $json[\"body\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "53926480-db8b-4fb5-a1ec-a550f945dd00",
+              "name": "Last Contacted",
+              "value": "={{ $now.format('yyyy-LL-dd')}}",
+              "type": "string"
+            },
+            {
+              "id": "9e1cc526-a3e1-4033-94db-cab29618601f",
+              "name": "Follow Up Stage",
+              "value": "1st Reminder Sent",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        208
+      ],
+      "id": "8a122dc0-6cd8-4fb0-a753-9a7574bdb941",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3f87461-ea59-44d6-b6d9-1550e6c88236",
+              "name": "Days Overdue",
+              "value": "={{ (new Date() - new Date($json[\"Due Date\"])) > 0 \n  ? Math.floor((new Date() - new Date($json[\"Due Date\"])) / (1000 * 60 * 60 * 24)) \n  : 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -736,
+        208
+      ],
+      "id": "19351d05-9608-44aa-b532-8bdabb041f37",
+      "name": "Days Overdue"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c09d5383-c2d2-43eb-87bf-55e1240e1900",
+              "name": "Aging Bucket",
+              "value": "={{    $json[\"Days Overdue\"] <= 0 ? \"Current\" :   $json[\"Days Overdue\"] <= 30 ? \"1-30 Days\" :   $json[\"Days Overdue\"] <= 60 ? \"31-60 Days\" : \"60+ Days\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -512,
+        208
+      ],
+      "id": "9d84a542-546e-4325-ab0a-143e03ec66d8",
+      "name": "Aging Bucket"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "419694ec-8758-4e3b-957f-6e48e46f1881",
+              "name": "Risk Level",
+              "value": "={{    $json[\"Days Overdue\"] > 60 || $json[\"Total\"] > 1000000 ? \"High Risk\" :   $json[\"Days Overdue\"] > 30 ? \"Medium Risk\" : \"Low Risk\" }}",
+              "type": "string"
+            },
+            {
+              "id": "9607ed5f-d575-4567-a741-a6d636cb342a",
+              "name": "Follow Up Stage",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "3e387ee7-e2f1-4192-83ed-475e9c8a2f56",
+              "name": "Last Contacted",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "7239d2e9-4fff-48eb-a468-9b5c02c2d767",
+              "name": "Payment Status",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -288,
+        208
+      ],
+      "id": "094208c9-1db7-475c-847b-d1bef379b49f",
+      "name": "Risk Level"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "638a9615-2dd7-4f37-918a-3f895815ed2b",
+              "name": "subject",
+              "value": "={{ $('High Risk').item.json.output[0].content[0].text.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "958cddc7-ac25-4f93-ad2d-e4201de17eb3",
+              "name": "body",
+              "value": "={{ $('High Risk').item.json.output[0].content[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "7ee76c40-55d3-41f0-b83a-50dfeb1541c4",
+              "name": "Follow Up Stage",
+              "value": "Urgent Notice Sent",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        -176
+      ],
+      "id": "7a10689f-15a2-450f-8be1-0f7f229c36fc",
+      "name": "Edit Fields5"
+    },
+    {
+      "parameters": {
+        "sendTo": "angelawanjiku171@gmail.com",
+        "subject": "={{ $('High Risk').item.json.output[0].content[0].text.subject }}",
+        "emailType": "text",
+        "message": "={{ $('High Risk').item.json.output[0].content[0].text.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        -176
+      ],
+      "id": "d496bb23-e22f-45ea-ba2d-0b713e707dfe",
+      "name": "Send a message2",
+      "webhookId": "6f73c9b3-fa50-42b0-8b7d-923901c67586",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GN09t5njBQFiyrJS",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Risk Level').item.json['Client Email Address'] }}",
+        "subject": "={{ $json[\"subject\"] }}",
+        "emailType": "text",
+        "message": "={{ $json[\"body\"] }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        16
+      ],
+      "id": "270d8e4a-15e6-4820-8326-c3253b121266",
+      "name": "Send a message3",
+      "webhookId": "de594920-2cc2-4fca-b1cc-5df45bb0552f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GN09t5njBQFiyrJS",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Risk Level').item.json['Client Email Address'] }}",
+        "subject": "={{ $('Low Risk').item.json.output[0].content[0].text.subject }}",
+        "emailType": "text",
+        "message": "={{ $('Low Risk').item.json.output[0].content[0].text.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        208
+      ],
+      "id": "a294274a-26c9-4bc9-ba79-d64556c85e9f",
+      "name": "Send a message4",
+      "webhookId": "03882f26-f881-4417-b617-9fb2042fc885",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GN09t5njBQFiyrJS",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        -176
+      ],
+      "id": "5695f81c-a1bb-4fee-bf67-9e774b315c6c",
+      "name": "No Operation, do nothing3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        16
+      ],
+      "id": "75143a17-2106-4603-a17e-3ec07f6c66e5",
+      "name": "No Operation, do nothing4"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        208
+      ],
+      "id": "bee459c4-39d3-4090-9e22-0315738afc9a",
+      "name": "No Operation, do nothing5"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        864,
+        -544
+      ],
+      "id": "ebe2da80-f853-4b05-a0f0-21dd6e876b6f",
+      "name": "No Operation, do nothing6"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4",
+          "mode": "list",
+          "cachedResultName": "AR Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 651755752,
+          "mode": "list",
+          "cachedResultName": "New Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit#gid=651755752"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Credit Classifier').item.json.row_number }}",
+            "Invoice Number": "={{ $('Credit Classifier').item.json['Invoice Number'] }}",
+            "Client Name": "={{ $('Credit Classifier').item.json['Client Name'] }}",
+            "Days Overdue": "={{ $('Credit Classifier').item.json['Days Overdue'] }}",
+            "Aging Bucket": "={{ $('Credit Classifier').item.json['Aging Bucket'] }}",
+            "Risk Level": "={{ $('Credit Classifier').item.json['Risk Level'] }}",
+            "Follow-up Stage": "={{ $('Edit Fields5').item.json['Follow Up Stage'] }}",
+            "Last Contacted": "={{ $now.format('yyyy-LL-dd') }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Email Address",
+              "displayName": "Client Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client KRA PIN",
+              "displayName": "Client KRA PIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sub Total",
+              "displayName": "Sub Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT Rate",
+              "displayName": "VAT Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT Amount",
+              "displayName": "VAT Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Issue Date",
+              "displayName": "Issue Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Days Overdue",
+              "displayName": "Days Overdue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Aging Bucket",
+              "displayName": "Aging Bucket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Risk Level",
+              "displayName": "Risk Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Follow-up Stage",
+              "displayName": "Follow-up Stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Contacted",
+              "displayName": "Last Contacted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1408,
+        -176
+      ],
+      "id": "bb9f7d20-1508-46dc-8c7e-2738fdfea000",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L8oOBZdjEsaJjUkM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4",
+          "mode": "list",
+          "cachedResultName": "AR Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 651755752,
+          "mode": "list",
+          "cachedResultName": "New Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit#gid=651755752"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Credit Classifier').item.json.row_number }}",
+            "Days Overdue": "={{ $('Credit Classifier').item.json['Days Overdue'] }}",
+            "Aging Bucket": "={{ $('Credit Classifier').item.json['Aging Bucket'] }}",
+            "Risk Level": "={{ $('Credit Classifier').item.json['Risk Level'] }}",
+            "Last Contacted": "={{ $now.format('yyyy-LL-dd') }}",
+            "Follow-up Stage": "={{ $('Edit Fields4').item.json['Follow Up Stage'] }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Email Address",
+              "displayName": "Client Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client KRA PIN",
+              "displayName": "Client KRA PIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sub Total",
+              "displayName": "Sub Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "VAT Rate",
+              "displayName": "VAT Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "VAT Amount",
+              "displayName": "VAT Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Issue Date",
+              "displayName": "Issue Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Days Overdue",
+              "displayName": "Days Overdue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Aging Bucket",
+              "displayName": "Aging Bucket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Risk Level",
+              "displayName": "Risk Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Follow-up Stage",
+              "displayName": "Follow-up Stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Contacted",
+              "displayName": "Last Contacted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1408,
+        208
+      ],
+      "id": "9c0b0d7a-df28-4791-ba67-fac032072901",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L8oOBZdjEsaJjUkM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4",
+          "mode": "list",
+          "cachedResultName": "AR Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 651755752,
+          "mode": "list",
+          "cachedResultName": "New Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit#gid=651755752"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Credit Classifier').item.json.row_number }}",
+            "Days Overdue": "={{ $('Credit Classifier').item.json['Days Overdue'] }}",
+            "Aging Bucket": "={{ $('Credit Classifier').item.json['Aging Bucket'] }}",
+            "Risk Level": "={{ $('Credit Classifier').item.json['Risk Level'] }}",
+            "Last Contacted": "={{ $now.format('yyyy-LL-dd') }}",
+            "Invoice Number": "={{ $('Credit Classifier').item.json['Invoice Number'] }}",
+            "Follow-up Stage": "={{ $('Edit Fields3').item.json['Follow Up Stage'] }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Email Address",
+              "displayName": "Client Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client KRA PIN",
+              "displayName": "Client KRA PIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sub Total",
+              "displayName": "Sub Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "VAT Rate",
+              "displayName": "VAT Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "VAT Amount",
+              "displayName": "VAT Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Issue Date",
+              "displayName": "Issue Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Days Overdue",
+              "displayName": "Days Overdue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Aging Bucket",
+              "displayName": "Aging Bucket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Risk Level",
+              "displayName": "Risk Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Follow-up Stage",
+              "displayName": "Follow-up Stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Contacted",
+              "displayName": "Last Contacted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1408,
+        16
+      ],
+      "id": "ddf22e20-5afa-4c58-b92a-538c60254b6f",
+      "name": "Update row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L8oOBZdjEsaJjUkM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4",
+          "mode": "list",
+          "cachedResultName": "AR Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 651755752,
+          "mode": "list",
+          "cachedResultName": "New Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit#gid=651755752"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -960,
+        208
+      ],
+      "id": "2f8e0f91-1128-4606-8d32-80be871f1a1d",
+      "name": "Get row(s) in sheet1",
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L8oOBZdjEsaJjUkM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// === REMINDER LOGIC - Handles new invoices in any aging bucket ===\n\nconst data = item.json;\n\nconst days = parseInt(data['Days Overdue']) || 0;\nconst stage = String(data['Follow-up Stage'] || \"\").trim();\n\nlet sendEmail = false;\nlet reminderType = null;\nlet newStage = null;\n\nconsole.log(`Debug - Invoice ${data['Invoice Number']}: Days=${days}, Stage=\"${stage}\"`);\n\n// Logic for new invoices or progressing invoices\nif (stage === \"\" || stage === \"No Reminder\") {\n    if (days >= 25 && days <= 40) {\n        sendEmail = true;\n        reminderType = \"Low Risk\";\n        newStage = \"1st Reminder Sent\";\n    } else if (days >= 41 && days <= 70) {\n        sendEmail = true;\n        reminderType = \"Medium Risk\";\n        newStage = \"2nd Reminder Sent\";\n    } else if (days >= 71) {\n        sendEmail = true;\n        reminderType = \"High Risk\";\n        newStage = \"Urgent Notice Sent\";\n    }\n} \nelse if (stage === \"1st Reminder Sent\" && days >= 45 && days <= 70) {\n    sendEmail = true;\n    reminderType = \"Medium Risk\";\n    newStage = \"2nd Reminder Sent\";\n} \nelse if (stage === \"2nd Reminder Sent\" && days >= 71) {\n    sendEmail = true;\n    reminderType = \"High Risk\";\n    newStage = \"Urgent Notice Sent\";\n}\n\ndata['Send_Email_Today'] = sendEmail;\ndata['Reminder_Type'] = reminderType;\ndata['New_Follow-up_Stage'] = newStage;\n\nreturn item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        208
+      ],
+      "id": "41547efb-956e-418a-801d-d4fbf85c786c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1184,
+        208
+      ],
+      "id": "26b2428a-76f1-43f4-96a7-ea683b2c1e19",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "03f0657a-7333-440a-96d1-3cd006a33855",
+              "leftValue": "={{ $json.Send_Email_Today }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        160,
+        208
+      ],
+      "id": "fbf73a33-e639-4f08-a7bc-f14ceaa245db",
+      "name": "Send Email Today?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -928
+      ],
+      "id": "e8ecccb5-5fd5-4540-a574-b0f8a056c8f7",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c962df66-f170-426d-bcee-9586ad7ca3ac",
+              "name": "Follow-up Stage",
+              "value": "={{ $json[\"Follow-up Stage\"] || \"No Reminder\" }}\n\n",
+              "type": "string"
+            },
+            {
+              "id": "d550aef1-9440-49ec-a89e-c4509ee1075d",
+              "name": "Days Overdue",
+              "value": "={{ $json['Days Overdue'] }}",
+              "type": "number"
+            },
+            {
+              "id": "0d94ffd5-5103-416b-95ff-92073f6d30c4",
+              "name": "Aging Bucket",
+              "value": "={{ $json['Aging Bucket'] }}",
+              "type": "string"
+            },
+            {
+              "id": "7046392e-8e27-4380-aadb-d4b3028e2d27",
+              "name": "Risk Level",
+              "value": "={{ $json['Risk Level'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        400
+      ],
+      "id": "7aed63ac-4908-4eb8-987e-bb096445746c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4",
+          "mode": "list",
+          "cachedResultName": "AR Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 651755752,
+          "mode": "list",
+          "cachedResultName": "New Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BgHy_QsxfFzSdkojimwNwppCRDW-7NAoHXwnz83OoU4/edit#gid=651755752"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "Days Overdue": "={{ $json['Days Overdue'] }}",
+            "Aging Bucket": "={{ $json['Aging Bucket'] }}",
+            "Risk Level": "={{ $json['Risk Level'] }}",
+            "Follow-up Stage": "={{ $json['Follow-up Stage'] }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Email Address",
+              "displayName": "Client Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client KRA PIN",
+              "displayName": "Client KRA PIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sub Total",
+              "displayName": "Sub Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT Rate",
+              "displayName": "VAT Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VAT Amount",
+              "displayName": "VAT Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Issue Date",
+              "displayName": "Issue Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Days Overdue",
+              "displayName": "Days Overdue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Aging Bucket",
+              "displayName": "Aging Bucket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Risk Level",
+              "displayName": "Risk Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Follow-up Stage",
+              "displayName": "Follow-up Stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Contacted",
+              "displayName": "Last Contacted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        400
+      ],
+      "id": "6226a1a0-637e-419a-8ebf-4f7a8593bc66",
+      "name": "Update row in sheet3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "L8oOBZdjEsaJjUkM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Binary": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drafting an email": {
+      "main": [
+        [
+          {
+            "node": "Send Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Gmail": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation": {
+      "main": [
+        [
+          {
+            "node": "Good Vs Bad Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bad Data Log": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Good Vs Bad Log": {
+      "main": [
+        [
+          {
+            "node": "New Invoices",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Bad Data Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Invoices": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Credit Classifier": {
+      "main": [
+        [
+          {
+            "node": "High Risk",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Medium Risk",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Low Risk",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        []
+      ]
+    },
+    "High Risk": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Medium Risk": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Low Risk": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Days Overdue": {
+      "main": [
+        [
+          {
+            "node": "Aging Bucket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aging Bucket": {
+      "main": [
+        [
+          {
+            "node": "Risk Level",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk Level": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields5": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Send a message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Send a message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message2": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message3": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message4": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Days Overdue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send Email Today?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Today?": {
+      "main": [
+        [
+          {
+            "node": "Credit Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet2": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6d3010b6-1e09-4c32-a505-d4f96875ae44",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "683e70fd529ed1d9300f5eca83ac8b8499f409b004a6f4986a2e15978622bb4d"
+  },
+  "id": "BXU0Vu0Wmx5oD6kn",
+  "tags": []
+}
